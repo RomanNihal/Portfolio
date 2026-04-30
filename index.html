@@ -25,7 +25,17 @@
             <li><a href="#projects">Projects</a></li>
             <li><a href="#contact">Contact</a></li>
         </ul>
+        <button id="theme-toggle" aria-label="Toggle Theme">
+            <svg class="bulb-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18h6"></path>
+                <path d="M10 22h4"></path>
+                <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
+            </svg>
+        </button>
     </nav>
+
+    <!-- Theme Toggle Curtain -->
+    <div id="theme-curtain" class="theme-curtain"></div>
 
     <!-- Hero Section -->
     <section id="home" class="hero">
@@ -71,12 +81,32 @@
                     applied engineering (Multi-Agent Systems, RAG pipelines, LLM Fine-Tuning).</p>
             </div>
             <div class="avatar-container" id="avatar-container">
-                <div class="eve-robot">
-                    <div class="eve-head" id="robot-head">
-                        <div class="eve-visor">
-                            <div class="eve-eye left-eye robot-pupil"></div>
-                            <div class="eve-eye right-eye robot-pupil"></div>
+                <div class="walle-robot">
+                    <div class="walle-head" id="robot-head">
+                        <div class="walle-eye left-eye-binocular">
+                            <div class="walle-lens">
+                                <div class="walle-pupil robot-pupil"></div>
+                            </div>
                         </div>
+                        <div class="walle-eye right-eye-binocular">
+                            <div class="walle-lens">
+                                <div class="walle-pupil robot-pupil"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="walle-neck"></div>
+                    <div class="walle-arm left-arm">
+                        <div class="walle-hand"></div>
+                    </div>
+                    <div class="walle-body">
+                        <div class="walle-panel"></div>
+                    </div>
+                    <div class="walle-arm right-arm">
+                        <div class="walle-hand"></div>
+                    </div>
+                    <div class="walle-tracks-container">
+                        <div class="walle-track left-track"></div>
+                        <div class="walle-track right-track"></div>
                     </div>
                 </div>
             </div>
@@ -318,6 +348,68 @@
         const pupils = document.querySelectorAll('.robot-pupil');
         const robotHead = document.getElementById('robot-head');
 
+        // Image Hover Logic
+        const hoverTrigger = document.querySelector('.hover-trigger');
+        const profilePopup = document.querySelector('.profile-popup');
+        let isHoveringName = false;
+
+        if (hoverTrigger) {
+            hoverTrigger.addEventListener('mouseenter', () => isHoveringName = true);
+            hoverTrigger.addEventListener('mouseleave', () => isHoveringName = false);
+        }
+
+        // Theme Toggle Logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeCurtain = document.getElementById('theme-curtain');
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            // Use similar but distinct colors from the palette
+            const transitionColor = nextTheme === 'light' ? '#e0e0e0' : '#1a1a1a';
+            
+            themeCurtain.style.backgroundColor = transitionColor;
+            
+            // --- Spatial Stagger Logic ---
+            const elements = document.querySelectorAll('h1, h2, h3, h4, p, a, span, .btn, .project-card, .list-item, .terminal-window, .term-input-line, .navbar');
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+            const maxDist = Math.sqrt(winW * winW + winH * winH);
+
+            elements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                // Distance from top-right corner (winW, 0)
+                const dist = Math.sqrt(Math.pow(winW - centerX, 2) + Math.pow(centerY, 2));
+                const normalizedDist = dist / maxDist;
+                
+                // Apply delay (0s to 0.4s) to follow the 1s wipe
+                el.style.transitionDelay = `${normalizedDist * 0.4}s`;
+            });
+
+            // Expand from top-right
+            themeCurtain.style.transition = 'clip-path 1s cubic-bezier(0.77, 0, 0.175, 1)';
+            themeCurtain.style.clipPath = 'circle(150% at 100% 0%)';
+            
+            setTimeout(() => {
+                // Change theme while covered
+                document.documentElement.setAttribute('data-theme', nextTheme);
+                
+                // Shrink towards bottom-left to reveal the actual background
+                themeCurtain.style.clipPath = 'circle(0% at 0% 100%)';
+                
+                setTimeout(() => {
+                    // Reset for next time
+                    themeCurtain.style.transition = 'none';
+                    themeCurtain.style.clipPath = 'circle(0% at 100% 0%)';
+                    
+                    // Clear temporary delays
+                    elements.forEach(el => el.style.transitionDelay = '');
+                }, 1000);
+            }, 1000);
+        });
+
         window.addEventListener("mousemove", function (e) {
             // Cursor update
             const posX = e.clientX;
@@ -330,6 +422,13 @@
                 left: `${posX}px`,
                 top: `${posY}px`
             }, { duration: 500, fill: "forwards" });
+
+            if (isHoveringName && profilePopup) {
+                profilePopup.animate({
+                    left: `${posX}px`,
+                    top: `${posY}px`
+                }, { duration: 800, fill: "forwards" });
+            }
 
             // Eye tracking update
             if (pupils.length > 0 && robotHead) {
